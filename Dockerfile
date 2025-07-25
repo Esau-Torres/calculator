@@ -1,20 +1,25 @@
-# Imagen base oficial de Java 21
-FROM eclipse-temurin:21-jdk-alpine
+# --- Etapa 1: Build del JAR con Maven
+FROM eclipse-temurin:21-jdk-alpine AS build
 
-# Establece el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copia los archivos del proyecto al contenedor
-COPY . .
+# Copiamos solo pom para cache de dependencias
+COPY mvnw pom.xml ./
+COPY .mvn/ .mvn
 
-# Da permisos de ejecución al wrapper de Maven
 RUN chmod +x mvnw
+RUN ./mvnw dependency:go-offline
 
-# Construye el proyecto sin ejecutar tests
+# Copiamos la fuente y hacemos compile
+COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
-# Expone el puerto en el que Spring Boot corre
+# --- Etapa 2: Imagen ligera para producción
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8081
 
-# Ejecuta la aplicación Spring Boot
-CMD ["java", "-jar", "target/calculator-api-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

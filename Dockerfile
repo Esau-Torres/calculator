@@ -1,17 +1,20 @@
-# Usa la imagen base de Railway (Ubuntu + Java + Maven)
-FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+# Imagen base oficial de Java 17 (Puedes usar Amazon Corretto o Eclipse Temurin)
+FROM eclipse-temurin:17-jdk-alpine
 
-# Establece el directorio de trabajo
+# Establecer el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copia el proyecto completo al contenedor
-COPY . /app
+# Copia los archivos del proyecto al contenedor
+COPY . .
 
 # Da permisos de ejecución al wrapper de Maven
 RUN chmod +x mvnw
 
-# Ejecuta el build de Maven, cacheando dependencias
-RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -DskipTests
+# Ejecuta el build del proyecto
+RUN ./mvnw clean package -DskipTests
 
-# Comando para iniciar el jar de Spring Boot
+# Expone el puerto en el que Spring Boot corre
+EXPOSE 8081
+
+# Comando para correr la aplicación
 CMD ["java", "-jar", "target/calculator-api-0.0.1-SNAPSHOT.jar"]
